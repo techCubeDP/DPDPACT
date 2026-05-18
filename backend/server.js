@@ -19,6 +19,11 @@ app.use('/api/discovery', discoveryRoutes);
 const complianceRoutes = require('./routes/compliance');
 app.use('/api/compliance', complianceRoutes);
 
+// Add after: app.use('/api/compliance', complianceRoutes);
+
+const breachRoutes = require('./routes/breaches');
+app.use('/api/breaches', breachRoutes);
+
 // Test database connection
 db.query('SELECT NOW()', (err, result) => {
   if (err) {

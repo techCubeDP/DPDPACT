@@ -1,0 +1,221 @@
+.report-btn {
+  background-color: #d32f2f;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.report-btn:hover {
+  background-color: #b71c1c;
+}
+
+.breach-form {
+  background: #fff3e0;
+  border: 2px solid #ff6f00;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px rgba(255, 111, 0, 0.1);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #ff6f00;
+  box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.1);
+}
+
+.submit-btn {
+  background-color: #ff6f00;
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.submit-btn:hover {
+  background-color: #e65100;
+}
+
+.submit-btn:disabled {
+  background-color: #bdbdbd;
+  cursor: not-allowed;
+}
+
+.letter-section {
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px rgba(76, 175, 80, 0.1);
+}
+
+.letter-section h2 {
+  margin-top: 0;
+  color: #1b5e20;
+}
+
+.letter-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.copy-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.copy-btn:hover {
+  background-color: #388e3c;
+}
+
+.download-btn {
+  background-color: #2196f3;
+  color: white;
+}
+
+.download-btn:hover {
+  background-color: #1976d2;
+}
+
+.letter-content {
+  background: white;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  padding: 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  color: #333;
+}
+
+.letter-note {
+  margin-top: 15px;
+  padding: 10px;
+  background: #fff9c4;
+  border-left: 4px solid #fbc02d;
+  color: #f57f17;
+  font-size: 13px;
+}
+
+.breaches-section {
+  margin-top: 30px;
+}
+
+.breaches-section h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.no-breaches {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 16px;
+}
+
+.breaches-list {
+  display: grid;
+  gap: 15px;
+}
+
+.breach-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.breach-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.breach-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.breach-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.severity-badge {
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.breach-details p {
+  margin: 8px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.breach-details strong {
+  color: #333;
+}
+
+.description {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.status-badge {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}

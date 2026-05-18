@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './App.css';
 import DataDiscovery from './DataDiscovery';
 import Compliance from './Compliance';
+import BreachAlert from './BreachAlert';
 
 function App() {
   const [activePage, setActivePage] = useState('discovery');
@@ -23,12 +24,19 @@ function App() {
           >
             ✓ Compliance
           </button>
+          <button
+            className={`nav-item ${activePage === 'breach' ? 'active' : ''}`}
+            onClick={() => setActivePage('breach')}
+          >
+            🚨 Breach Alert
+          </button>
         </nav>
       </div>
 
       <div className="main-content">
         {activePage === 'discovery' && <DataDiscovery />}
         {activePage === 'compliance' && <Compliance />}
+        {activePage === 'breach' && <BreachAlert />}
       </div>
     </div>
   );

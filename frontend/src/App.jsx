@@ -1,57 +1,35 @@
 import React, { useState } from 'react';
 import './App.css';
+import DataDiscovery from './DataDiscovery';
+import Compliance from './Compliance';
 
 function App() {
-  const [inventory, setInventory] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const handleScan = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/discovery/scan', {
-        method: 'POST',
-      });
-      const data = await response.json();
-      setInventory(data.data || []);
-    } catch (error) {
-      console.error('Error scanning:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [activePage, setActivePage] = useState('discovery');
 
   return (
-    <div className="container">
-      <h1>📊 DPDP Data Discovery</h1>
-      
-      <button onClick={handleScan} disabled={loading}>
-        {loading ? 'Scanning...' : 'Scan Database'}
-      </button>
+    <div className="app">
+      <div className="sidebar">
+        <h1 className="logo">📊 DPDP</h1>
+        <nav className="nav-menu">
+          <button
+            className={`nav-item ${activePage === 'discovery' ? 'active' : ''}`}
+            onClick={() => setActivePage('discovery')}
+          >
+            📊 Data Discovery
+          </button>
+          <button
+            className={`nav-item ${activePage === 'compliance' ? 'active' : ''}`}
+            onClick={() => setActivePage('compliance')}
+          >
+            ✓ Compliance
+          </button>
+        </nav>
+      </div>
 
-      {inventory.length > 0 && (
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Table Name</th>
-                <th>Records</th>
-                <th>Has PII</th>
-                <th>Columns</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventory.map((item) => (
-                <tr key={item.table}>
-                  <td>{item.table}</td>
-                  <td>{item.recordCount}</td>
-                  <td>{item.hasPII ? '✓ Yes' : '✗ No'}</td>
-                  <td>{item.columns.join(', ')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="main-content">
+        {activePage === 'discovery' && <DataDiscovery />}
+        {activePage === 'compliance' && <Compliance />}
+      </div>
     </div>
   );
 }

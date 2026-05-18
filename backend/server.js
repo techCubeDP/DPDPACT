@@ -14,6 +14,11 @@ app.use(express.json());
 const discoveryRoutes = require('./routes/discovery');
 app.use('/api/discovery', discoveryRoutes);
 
+// Add this line after: app.use('/api/discovery', discoveryRoutes);
+
+const complianceRoutes = require('./routes/compliance');
+app.use('/api/compliance', complianceRoutes);
+
 // Test database connection
 db.query('SELECT NOW()', (err, result) => {
   if (err) {

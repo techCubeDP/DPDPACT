@@ -16,6 +16,12 @@ app.use('/api/discovery', discoveryRoutes);
 
 // Add this line after: app.use('/api/discovery', discoveryRoutes);
 
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
+const filesRoutes = require('./routes/files');
+app.use('/api/files', filesRoutes);
+
 const complianceRoutes = require('./routes/compliance');
 app.use('/api/compliance', complianceRoutes);
 
@@ -23,6 +29,9 @@ app.use('/api/compliance', complianceRoutes);
 
 const breachRoutes = require('./routes/breaches');
 app.use('/api/breaches', breachRoutes);
+
+const departmentsRoutes = require('./routes/departments');
+app.use('/api/departments', departmentsRoutes);
 
 // Test database connection
 db.query('SELECT NOW()', (err, result) => {
@@ -48,3 +57,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Database: ${process.env.DATABASE_URL}`);
 });
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));

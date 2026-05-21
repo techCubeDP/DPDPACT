@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import './BreachAlert.css';
 
 function BreachAlert() {
   const [breaches, setBreaches] = useState([]);
   const [generatedLetter, setGeneratedLetter] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  
   const [formData, setFormData] = useState({
     title: '',
     severity: 'medium',
@@ -30,9 +28,9 @@ function BreachAlert() {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -41,7 +39,6 @@ function BreachAlert() {
     setLoading(true);
 
     try {
-      // Create breach
       const createResponse = await fetch('/api/breaches/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -57,7 +54,6 @@ function BreachAlert() {
 
       const breach = await createResponse.json();
 
-      // Generate letter
       const letterResponse = await fetch(`/api/breaches/${breach.id}/generate-letter`, {
         method: 'POST',
       });
@@ -69,7 +65,6 @@ function BreachAlert() {
       const letterData = await letterResponse.json();
       setGeneratedLetter(letterData.letter);
 
-      // Reset form
       setFormData({
         title: '',
         severity: 'medium',
@@ -77,7 +72,6 @@ function BreachAlert() {
         affectedRecords: '',
       });
 
-      // Refresh breaches list
       fetchBreaches();
       setShowForm(false);
     } catch (error) {
@@ -104,139 +98,293 @@ function BreachAlert() {
   };
 
   const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'critical':
-        return '#d32f2f';
-      case 'high':
-        return '#f57c00';
-      case 'medium':
-        return '#fbc02d';
-      default:
-        return '#388e3c';
-    }
+    const colors = {
+      critical: '#dc2626',
+      high: '#ea580c',
+      medium: '#ca8a04',
+      low: '#16a34a'
+    };
+    return colors[severity] || '#666';
   };
 
   return (
-    <div className="container">
-      <h1>🚨 Breach Alert & DPB Notification</h1>
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', margin: '0 0 1rem 0' }}>
+          🚨 Breach Alert & DPB Notification
+        </h1>
+        <p style={{ color: '#666', margin: 0 }}>
+          Report breaches and auto-generate notification letters
+        </p>
+      </div>
 
-      <button 
-        className="report-btn"
+      {/* Report Button */}
+      <button
         onClick={() => setShowForm(!showForm)}
+        style={{
+          background: '#dc2626',
+          color: 'white',
+          border: 'none',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '0.5rem',
+          fontSize: '1rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          marginBottom: '2rem'
+        }}
       >
         {showForm ? '✕ Cancel' : '+ Report New Breach'}
       </button>
 
+      {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="breach-form">
-          <div className="form-group">
-            <label>Breach Title *</label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleFormChange}
-              placeholder="e.g., Unauthorized Data Export"
-              required
-            />
-          </div>
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            background: '#fff3e0',
+            border: '2px solid #ff6f00',
+            borderRadius: '0.75rem',
+            padding: '1.5rem',
+            marginBottom: '2rem'
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                Breach Title
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleFormChange}
+                placeholder="e.g., Unauthorized Data Export"
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.5rem',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem'
+                }}
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Severity Level *</label>
-            <select
-              name="severity"
-              value={formData.severity}
-              onChange={handleFormChange}
-              required
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                Severity
+              </label>
+              <select
+                name="severity"
+                value={formData.severity}
+                onChange={handleFormChange}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.5rem',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem'
+                }}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleFormChange}
+                placeholder="Describe what happened..."
+                rows="4"
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.5rem',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                Affected Records
+              </label>
+              <input
+                type="number"
+                name="affectedRecords"
+                value={formData.affectedRecords}
+                onChange={handleFormChange}
+                placeholder="e.g., 1500"
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '0.5rem',
+                  fontFamily: 'inherit',
+                  fontSize: '1rem'
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                background: loading ? '#9ca3af' : '#ff6f00',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer'
+              }}
             >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
+              {loading ? '⏳ Generating...' : '📝 Report & Generate Letter'}
+            </button>
           </div>
-
-          <div className="form-group">
-            <label>Description *</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleFormChange}
-              placeholder="Describe what happened..."
-              rows="4"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Number of Affected Records *</label>
-            <input
-              type="number"
-              name="affectedRecords"
-              value={formData.affectedRecords}
-              onChange={handleFormChange}
-              placeholder="e.g., 1500"
-              required
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="submit-btn"
-          >
-            {loading ? '⏳ Generating...' : '📝 Report & Generate Letter'}
-          </button>
         </form>
       )}
 
+      {/* Letter */}
       {generatedLetter && (
-        <div className="letter-section">
-          <h2>📄 Generated DPB Notification Letter</h2>
-          <div className="letter-actions">
-            <button onClick={copyToClipboard} className="action-btn copy-btn">
-              📋 Copy to Clipboard
+        <div
+          style={{
+            background: '#e8f5e9',
+            border: '2px solid #4caf50',
+            borderRadius: '0.75rem',
+            padding: '1.5rem',
+            marginBottom: '2rem'
+          }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1b5e20', marginTop: 0 }}>
+            📄 Generated DPB Notification Letter
+          </h2>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <button
+              onClick={copyToClipboard}
+              style={{
+                background: '#4caf50',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              📋 Copy
             </button>
-            <button onClick={downloadLetter} className="action-btn download-btn">
-              ⬇️ Download as Text
+            <button
+              onClick={downloadLetter}
+              style={{
+                background: '#2196f3',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              ⬇️ Download
             </button>
           </div>
-          <pre className="letter-content">{generatedLetter}</pre>
-          <p className="letter-note">
-            ⚠️ Note: Add your organization's official letterhead, seal, and DPO's 
-            digital signature before submitting to Data Protection Board.
-          </p>
+
+          <pre
+            style={{
+              background: 'white',
+              border: '1px solid #c8e6c9',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              overflow: 'auto',
+              maxHeight: '400px',
+              fontSize: '0.75rem',
+              lineHeight: '1.6',
+              color: '#333'
+            }}
+          >
+            {generatedLetter}
+          </pre>
         </div>
       )}
 
-      <div className="breaches-section">
-        <h2>📋 Breach History</h2>
+      {/* Breach History */}
+      <div>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+          📋 Breach History
+        </h2>
+
         {breaches.length === 0 ? (
-          <p className="no-breaches">No breaches reported yet.</p>
+          <div style={{
+            background: 'white',
+            borderRadius: '0.75rem',
+            padding: '2rem',
+            textAlign: 'center',
+            color: '#999'
+          }}>
+            No breaches reported yet
+          </div>
         ) : (
-          <div className="breaches-list">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {breaches.map((breach) => (
-              <div key={breach.id} className="breach-card">
-                <div className="breach-header">
-                  <h3>{breach.title}</h3>
+              <div
+                key={breach.id}
+                style={{
+                  background: 'white',
+                  borderRadius: '0.75rem',
+                  padding: '1.5rem',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  borderLeft: `5px solid ${getSeverityColor(breach.severity)}`
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', margin: 0 }}>
+                    {breach.title}
+                  </h3>
                   <span
-                    className="severity-badge"
-                    style={{ backgroundColor: getSeverityColor(breach.severity) }}
+                    style={{
+                      background: getSeverityColor(breach.severity),
+                      color: 'white',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '1rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '600'
+                    }}
                   >
                     {breach.severity.toUpperCase()}
                   </span>
                 </div>
-                <div className="breach-details">
-                  <p>
+
+                <div style={{ fontSize: '0.875rem', color: '#666', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <p style={{ margin: 0 }}>
                     <strong>Date:</strong> {new Date(breach.detected_at).toLocaleDateString('en-IN')}
                   </p>
-                  <p>
-                    <strong>Status:</strong> <span className="status-badge">{breach.status.toUpperCase()}</span>
+                  <p style={{ margin: 0 }}>
+                    <strong>Affected:</strong> {breach.affected_records} records
                   </p>
-                  <p>
-                    <strong>Affected Records:</strong> {breach.affected_records}
+                  <p style={{ margin: 0 }}>
+                    <strong>Status:</strong> {breach.status}
                   </p>
-                  <p className="description">{breach.description}</p>
+                  <p style={{ margin: '0.75rem 0 0 0', color: '#555', lineHeight: '1.5' }}>
+                    {breach.description}
+                  </p>
                 </div>
               </div>
             ))}

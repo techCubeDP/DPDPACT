@@ -17,35 +17,35 @@ function FileSharing() {
     fetchAllData();
   }, []);
 
-  const fetchAllData = async () => {
-    try {
-      const token = localStorage.getItem('token');
+const fetchAllData = async () => {
+  try {
+    const token = localStorage.getItem('token');
 
-      // Fetch my files
-      const filesRes = await fetch('/api/files/my-files', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const files = await filesRes.json();
-      setMyFiles(files);
+    // Fetch my files
+    const filesRes = await fetch('/api/files/my-files', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const files = await filesRes.json();
+    setMyFiles(files);
 
-      // Fetch departments
-      const deptRes = await fetch('/api/departments');
-      const depts = await deptRes.json();
-      setDepartments(depts);
+    // Fetch departments
+    const deptRes = await fetch('/api/departments');
+    const depts = await deptRes.json();
+    setDepartments(depts);
 
-      // Fetch pending approvals
-      const approvalsRes = await fetch('/api/files/approvals/pending', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const approvals = await approvalsRes.json();
-      setPendingApprovals(approvals);
+    // Fetch ALL shares (pending + approved)
+    const approvalsRes = await fetch('/api/files/approvals/pending', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const approvals = await approvalsRes.json();
+    setPendingApprovals(approvals);
 
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-    }
-  };
+    setLoading(false);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    setLoading(false);
+  }
+};
 
   const handleShareClick = (fileId) => {
     setShowShareModal(fileId);
@@ -127,6 +127,33 @@ function FileSharing() {
       alert('❌ Error: ' + error.message);
     }
   };
+  const handleDownload = async (shareId, filename) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/files/${shareId}/download`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Download failed');
+    }
+
+    // Create blob and download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+
+    alert('✅ File downloaded!');
+  } catch (error) {
+    alert('❌ Error: ' + error.message);
+  }
+};
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
@@ -316,9 +343,10 @@ function FileSharing() {
       </div>
 
       {/* Pending Approvals */}
+      // Pending Approvals & Approved Shares
       <div>
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
-          ⏳ Pending Approvals
+          ⏳ Pending & Approved Shares
         </h2>
 
         {pendingApprovals.length === 0 ? (
@@ -331,10 +359,10 @@ function FileSharing() {
               <div
                 key={share.id}
                 style={{
-                  background: 'white',
+                  background: share.approval_status === 'approved' ? '#f0fdf4' : 'white',
                   borderRadius: '0.75rem',
                   padding: '1.5rem',
-                  borderLeft: '5px solid #ff6f00',
+                  borderLeft: share.approval_status === 'approved' ? '5px solid #16a34a' : '5px solid #ff6f00',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                 }}
               >
@@ -351,14 +379,14 @@ function FileSharing() {
                     </p>
                   </div>
                   <span style={{
-                    background: '#fef3c7',
-                    color: '#92400e',
+                    background: share.approval_status === 'approved' ? '#dcfce7' : '#fef3c7',
+                    color: share.approval_status === 'approved' ? '#166534' : '#92400e',
                     padding: '0.25rem 0.75rem',
                     borderRadius: '1rem',
                     fontSize: '0.75rem',
                     fontWeight: '600'
                   }}>
-                    PENDING
+                    {share.approval_status === 'approved' ? '✅ APPROVED' : '⏳ PENDING'}
                   </span>
                 </div>
 
@@ -366,36 +394,55 @@ function FileSharing() {
                   Purpose: {share.purpose}
                 </p>
 
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button
-                    onClick={() => handleApprove(share.id)}
-                    style={{
-                      background: '#16a34a',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.5rem 1.5rem',
-                      borderRadius: '0.5rem',
-                      cursor: 'pointer',
-                      fontWeight: '600'
-                    }}
-                  >
-                    ✓ Approve
-                  </button>
-                  <button
-                    onClick={() => handleReject(share.id)}
-                    style={{
-                      background: '#dc2626',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.5rem 1.5rem',
-                      borderRadius: '0.5rem',
-                      cursor: 'pointer',
-                      fontWeight: '600'
-                    }}
-                  >
-                    ✕ Reject
-                  </button>
-                </div>
+                {share.approval_status === 'pending' ? (
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      onClick={() => handleApprove(share.id)}
+                      style={{
+                        background: '#16a34a',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1.5rem',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      ✓ Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(share.id)}
+                      style={{
+                        background: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1.5rem',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      ✕ Reject
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      onClick={() => handleDownload(share.id, share.filename)}
+                      style={{
+                        background: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1.5rem',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      ⬇️ Download File
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

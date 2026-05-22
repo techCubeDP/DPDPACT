@@ -7,6 +7,7 @@ import Compliance from './Compliance';
 import BreachAlert from './BreachAlert';
 import FileUpload from './FileUpload';
 import FileSharing from './FileSharing';
+import AuditLogs from './AuditLogs';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -214,6 +215,7 @@ function App() {
             {activePage === 'breach' && <BreachAlert />}
             {activePage === 'upload' && <FileUpload />}
             {activePage === 'sharing' && <FileSharing />}
+            {activePage === 'audit' && <AuditLogs />}
           </div>
         </div>
       </div>

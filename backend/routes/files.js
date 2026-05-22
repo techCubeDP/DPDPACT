@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../config/database');
 const { authenticateToken } = require('./auth');
+const { logAction } = require('../services/auditLog');
 
 const router = express.Router();
 
@@ -54,6 +55,13 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     const fileId = result.rows[0].id;
     console.log('✅ File saved to DB:', fileId);
 
+    // Log the action
+    await logAction(req.user.id, 'FILE_UPLOADED', {
+      filename: req.file.originalname,
+      size: req.file.size,
+      type: path.extname(req.file.originalname)
+    }, fileId);
+
     res.json({
       message: 'File uploaded successfully',
       fileId: fileId,
@@ -81,7 +89,7 @@ router.get('/my-files', authenticateToken, async (req, res) => {
   }
 });
 
-// SIMPLE PII SCAN - NO FILE READING
+// Scan file for PII
 router.post('/:id/scan-pii', authenticateToken, async (req, res) => {
   try {
     console.log('🔍 PII scan started for file:', req.params.id);
@@ -117,7 +125,7 @@ router.post('/:id/scan-pii', authenticateToken, async (req, res) => {
       const stats = fs.statSync(file.file_path);
       const fileSize = Math.min(stats.size, 500 * 1024); // 500KB max
       
-      fileContent = fs.readFileSync(file.file_path, 'utf-8', { flag: 'r' }).substring(0, fileSize);
+      fileContent = fs.readFileSync(file.file_path, 'utf-8').substring(0, fileSize);
       console.log('✅ File content read:', fileContent.length, 'characters');
     } catch (readError) {
       console.warn('⚠️ Could not read file as text:', readError.message);
@@ -214,20 +222,189 @@ router.post('/:id/scan-pii', authenticateToken, async (req, res) => {
 // Share file
 router.post('/:id/share', authenticateToken, async (req, res) => {
   try {
+    console.log('🔄 File share initiated');
     const { receiverDepartmentId, purpose } = req.body;
 
+    if (!receiverDepartmentId || !purpose) {
+      return res.status(400).json({ error: 'Department and purpose required' });
+    }
+
     const result = await db.query(
-      `INSERT INTO file_shares (file_id, sender_id, receiver_department_id, purpose)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO file_shares (file_id, sender_id, receiver_department_id, purpose, approval_status)
+       VALUES ($1, $2, $3, $4, 'pending')
        RETURNING id, approval_status, created_at`,
       [req.params.id, req.user.id, receiverDepartmentId, purpose]
     );
+
+    const shareId = result.rows[0].id;
+    console.log('✅ Share created:', shareId);
+
+    // Log the action
+    await logAction(req.user.id, 'FILE_SHARED', {
+      receiverDepartmentId: receiverDepartmentId,
+      purpose: purpose,
+      shareId: shareId
+    }, req.params.id);
 
     res.json({
       message: 'File shared successfully',
       share: result.rows[0]
     });
   } catch (error) {
+    console.error('❌ Share error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get pending approvals (only for user's department)
+router.get('/approvals/pending', authenticateToken, async (req, res) => {
+  try {
+    console.log('📋 Fetching approvals for user:', req.user.id);
+
+    // Get current user's department
+    const userResult = await db.query(
+      'SELECT department FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userDepartment = userResult.rows[0].department;
+    console.log('👤 User department:', userDepartment);
+
+    // Get files shared to user's department (both pending and approved)
+    const result = await db.query(
+      `SELECT fs.id, f.id as file_id, f.filename, u.username as sender, d.name as receiver_dept, 
+              fs.purpose, fs.approval_status, fs.created_at
+       FROM file_shares fs
+       JOIN files f ON fs.file_id = f.id
+       JOIN users u ON fs.sender_id = u.id
+       JOIN departments d ON fs.receiver_department_id = d.id
+       WHERE d.name = $1
+       AND fs.approval_status IN ('pending', 'approved')
+       ORDER BY fs.created_at DESC`,
+      [userDepartment]
+    );
+
+    console.log('✅ Found', result.rows.length, 'shares');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('❌ Error fetching approvals:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Approve or reject share
+router.put('/:shareId/approve', authenticateToken, async (req, res) => {
+  try {
+    console.log('🔐 Approval request:', req.body.approved ? 'APPROVE' : 'REJECT');
+
+    const result = await db.query(
+      `UPDATE file_shares 
+       SET approval_status = $1, approved_by = $2, approved_at = NOW()
+       WHERE id = $3
+       RETURNING id, approval_status`,
+      [req.body.approved ? 'approved' : 'rejected', req.user.id, req.params.shareId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Share not found' });
+    }
+
+    console.log('✅ Share updated:', result.rows[0]);
+
+    // Log the action
+    const action = req.body.approved ? 'SHARE_APPROVED' : 'SHARE_REJECTED';
+    await logAction(req.user.id, action, {
+      shareId: req.params.shareId,
+      status: req.body.approved ? 'approved' : 'rejected'
+    });
+
+    res.json({ share: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Approval error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Download approved file - CORRECTED VERSION
+router.get('/:id/download', authenticateToken, async (req, res) => {
+  try {
+    console.log('📥 Download request for share ID:', req.params.id);
+    console.log('User ID:', req.user.id);
+
+    // Get user's department
+    const userResult = await db.query(
+      'SELECT department FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.warn('⚠️ User not found');
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userDepartment = userResult.rows[0].department;
+    console.log('👤 User department:', userDepartment);
+
+    // Get file from file_shares using share ID (not file ID)
+    const fileResult = await db.query(
+      `SELECT f.id, f.filename, f.file_path, fs.approval_status
+       FROM files f
+       INNER JOIN file_shares fs ON f.id = fs.file_id
+       INNER JOIN departments d ON fs.receiver_department_id = d.id
+       WHERE fs.id = $1
+       AND d.name = $2
+       AND fs.approval_status = 'approved'`,
+      [req.params.id, userDepartment]
+    );
+
+    console.log('📊 File query result rows:', fileResult.rows.length);
+
+    if (fileResult.rows.length === 0) {
+      console.warn('⚠️ File not found or not approved for this user');
+      console.warn('  Share ID:', req.params.id);
+      console.warn('  Department:', userDepartment);
+      return res.status(403).json({ error: 'File not approved for download or access denied' });
+    }
+
+    const file = fileResult.rows[0];
+    console.log('📄 File found:', file.filename);
+    console.log('📁 File path:', file.file_path);
+
+    // Check if file path exists
+    if (!file.file_path) {
+      console.error('❌ File path is null');
+      return res.status(404).json({ error: 'File path invalid' });
+    }
+
+    if (!fs.existsSync(file.file_path)) {
+      console.error('❌ File does not exist at:', file.file_path);
+      return res.status(404).json({ error: 'File not found on server' });
+    }
+
+    console.log('✅ Sending file:', file.filename);
+
+    // Log download action
+    await logAction(req.user.id, 'FILE_DOWNLOADED', {
+      filename: file.filename,
+      fileId: file.id,
+      shareId: req.params.id
+    }, file.id);
+
+    // Send file for download
+    res.download(file.file_path, file.filename, (err) => {
+      if (err) {
+        console.error('❌ Download stream error:', err);
+      } else {
+        console.log('✅ Download complete for:', file.filename);
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Download error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -33,6 +33,9 @@ app.use('/api/breaches', breachRoutes);
 const departmentsRoutes = require('./routes/departments');
 app.use('/api/departments', departmentsRoutes);
 
+const auditLogsRoutes = require('./routes/auditLogs');
+app.use('/api/audit-logs', auditLogsRoutes);
+
 // Test database connection
 db.query('SELECT NOW()', (err, result) => {
   if (err) {

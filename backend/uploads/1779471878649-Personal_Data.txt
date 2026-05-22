@@ -1,0 +1,31 @@
+Employee Data Report
+
+Name: John Doe
+Email: john.doe@company.com
+Phone: +91 9876543210
+Aadhaar: 1234 5678 9012
+PAN: ABCDE1234F
+
+Department: IT
+Salary: ₹50,00,000
+Date of Birth: 15/06/1985
+
+---
+
+Name: Jane Smith
+Email: jane.smith@company.com
+Phone: 9876543211
+Aadhaar: 5678 1234 9012
+PAN: FGHIJ5678K
+
+Department: HR
+Salary: ₹45,00,000
+Date of Birth: 22/03/1990
+
+---
+
+Name: Robert Wilson
+Email: robert@company.com
+Phone: 9123456789
+Passport: A12345678
+SSN: 123-45-6789

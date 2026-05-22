@@ -72,7 +72,7 @@ html, body, #root {
 
 .app-name {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #cbd5e1;
   margin: 0;
 }
 
@@ -96,7 +96,7 @@ html, body, #root {
   border-radius: 0.5rem;
   border: 1px solid transparent;
   background: rgba(16, 185, 129, 0.08);
-  color: #cbd5e1;
+  color: #e2e8f0;
   cursor: pointer;
   transition: all 0.3s;
   font-weight: 500;
@@ -124,6 +124,7 @@ html, body, #root {
 
 .nav-label {
   flex: 1;
+  color: #e2e8f0;
 }
 
 /* USER SECTION */
@@ -151,7 +152,7 @@ html, body, #root {
 
 .user-role {
   margin: 0;
-  color: #94a3b8;
+  color: #cbd5e1;
   font-size: 0.75rem;
   text-transform: uppercase;
 }
@@ -194,10 +195,7 @@ html, body, #root {
 .main-content > div:first-child h1 {
   font-size: 1.5rem;
   font-weight: bold;
-  background: linear-gradient(90deg, #10b981, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #10b981;
   margin: 0;
 }
 
@@ -222,18 +220,52 @@ html, body, #root {
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
+/* HEADINGS */
+h1, h2, h3, h4, h5, h6 {
+  color: #e2e8f0 !important;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #10b981 !important;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* TEXT */
+p, span, div, a, label {
+  color: #e2e8f0 !important;
+}
+
+strong, b {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
 /* BUTTONS */
 button {
   font-family: inherit;
   transition: all 0.3s;
+  color: white !important;
 }
 
-/* Green gradient buttons */
 button[type="submit"] {
   background: linear-gradient(90deg, #10b981, #059669) !important;
   color: white !important;
   border: none !important;
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.3) !important;
+  font-weight: 600 !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 0.5rem !important;
 }
 
 button[type="submit"]:hover {
@@ -293,6 +325,7 @@ tbody tr:hover {
 
 tbody td {
   padding: 1rem;
+  color: #e2e8f0;
 }
 
 /* SCROLLBAR */
@@ -324,4 +357,89 @@ tbody td {
   .main-content {
     margin-left: 5rem;
   }
+}
+/* UNIVERSAL TEXT FIX - Make everything readable */
+* {
+  color: #e2e8f0 !important;
+}
+
+body, html, #root, div, p, span, li, td, th, label, h1, h2, h3 {
+  color: #e2e8f0 !important;
+  background-color: inherit !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #10b981 !important;
+}
+
+/* Headings stay green */
+h1, h2, h3, h4, h5, h6 {
+  color: #10b981 !important;
+}
+
+/* Keep white text bright */
+p, span, div, td, li, label {
+  color: #e2e8f0 !important;
+}
+
+/* Make disabled text lighter */
+:disabled, [disabled] {
+  color: #94a3b8 !important;
+}
+
+/* Card text */
+.stat-card, .feature-card {
+  color: #e2e8f0 !important;
+}
+/* FIX TABLE HEADERS - Make them visible */
+
+/* Table header - dark background with bright text */
+table thead {
+  background: #0f172a !important;
+}
+
+table thead th {
+  background: #0f172a !important;
+  color: #10b981 !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid #10b981 !important;
+  padding: 1rem !important;
+  text-align: left !important;
+}
+
+/* Table body rows */
+table tbody {
+  background: transparent !important;
+}
+
+table tbody tr {
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2) !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+}
+
+table tbody tr:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+
+table tbody td {
+  color: #e2e8f0 !important;
+  padding: 1rem !important;
+}
+
+/* All table text - bright */
+table {
+  color: #e2e8f0 !important;
+}
+
+table tr {
+  color: #e2e8f0 !important;
+}
+
+table td {
+  color: #e2e8f0 !important;
+}
+
+table th {
+  color: #10b981 !important;
+  font-weight: 600 !important;
 }

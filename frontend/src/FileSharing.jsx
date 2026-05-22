@@ -343,7 +343,6 @@ const fetchAllData = async () => {
       </div>
 
       {/* Pending Approvals */}
-      // Pending Approvals & Approved Shares
       <div>
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
           ⏳ Pending & Approved Shares

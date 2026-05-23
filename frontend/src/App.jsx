@@ -8,6 +8,7 @@ import BreachAlert from './BreachAlert';
 import FileUpload from './FileUpload';
 import FileSharing from './FileSharing';
 import AuditLogs from './AuditLogs';
+import AdvancedDiscovery from './AdvancedDiscovery';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -62,15 +63,16 @@ function App() {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-    { id: 'discovery', label: 'Data Discovery', icon: '📊' },
-    { id: 'compliance', label: 'Compliance', icon: '✓' },
-    { id: 'breach', label: 'Breach Alert', icon: '🚨' },
-    { id: 'upload', label: 'File Upload', icon: '📁' },
-    { id: 'sharing', label: 'File Sharing', icon: '🔄' },
-    { id: 'audit', label: 'Audit Logs', icon: '📋' },
-  ];
+const navItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+  { id: 'discovery', label: 'Data Discovery', icon: '📊' },
+  { id: 'advancedDiscovery', label: 'Advanced Discovery', icon: '🗄️' },
+  { id: 'compliance', label: 'Compliance', icon: '✓' },
+  { id: 'breach', label: 'Breach Alert', icon: '🚨' },
+  { id: 'upload', label: 'File Upload', icon: '📁' },
+  { id: 'sharing', label: 'File Sharing', icon: '🔄' },
+  { id: 'audit', label: 'Audit Logs', icon: '📋' },
+];
 
   return (
     <div className="app">
@@ -124,6 +126,7 @@ function App() {
           <div>
             {activePage === 'dashboard' && <Dashboard user={user} />}
             {activePage === 'discovery' && <DataDiscovery />}
+            {activePage === 'advancedDiscovery' && <AdvancedDiscovery />} 
             {activePage === 'compliance' && <Compliance />}
             {activePage === 'breach' && <BreachAlert />}
             {activePage === 'upload' && <FileUpload />}

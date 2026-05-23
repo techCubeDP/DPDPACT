@@ -1,0 +1,106 @@
+================================================================================
+                DATA PROTECTION BOARD NOTIFICATION LETTER
+                      DPDP ACT, 2023 - BREACH NOTIFICATION
+================================================================================
+
+TO: Data Protection Board of India
+    New Delhi
+
+FROM: [Your Organization Name]
+
+DATE: 22/5/2026
+
+SUBJECT: Notification of Personal Data Breach
+
+================================================================================
+                            BREACH DETAILS
+================================================================================
+
+1. INCIDENT INFORMATION:
+   
+   Breach Title: Unauthorize access
+   Date of Discovery: 22/5/2026
+   Severity Level: MEDIUM
+   Status: OPEN
+
+2. DATA BREACH DESCRIPTION:
+
+   Unauthorize access
+
+3. SCALE OF THE BREACH:
+
+   Number of Individuals Affected: 300
+   
+4. TYPES OF PERSONAL DATA INVOLVED:
+
+   Personal Identifiable Information (PII) including:
+   - Names
+   - Email Addresses
+   - Phone Numbers
+   - Identification Numbers
+
+5. IMPACT ASSESSMENT:
+
+   This breach may affect the personal data security of the above number
+   of individuals and requires immediate notification as per Section 6(2)
+   of the Digital Personal Data Protection Act, 2023.
+
+6. IMMEDIATE ACTIONS TAKEN:
+
+   ✓ Breach has been isolated and contained
+   ✓ Incident response team has been activated
+   ✓ Forensic investigation is in progress
+   ✓ Affected individuals are being notified
+   ✓ Remedial measures are being implemented
+
+7. MEASURES TO PREVENT RECURRENCE:
+
+   - Enhanced security controls will be implemented
+   - Staff training will be conducted
+   - System audits will be performed
+   - Data access controls will be reviewed
+
+8. NOTIFICATION STATUS:
+
+   All affected individuals will be notified immediately with:
+   - Details of the breach
+   - Steps they should take
+   - Contact information for support
+
+================================================================================
+                          COMPLIANCE STATEMENT
+================================================================================
+
+This notification is submitted in compliance with:
+- Digital Personal Data Protection Act, 2023
+- Rules framed under DPDP Act, 2025
+- Data Protection Board Guidelines
+
+Submitted for urgent review and investigation.
+
+================================================================================
+                              CONTACT DETAILS
+================================================================================
+
+For Further Information:
+Data Protection Officer (DPO)
+[Organization Name]
+Email: dpo@[organization].in
+Phone: [Contact Number]
+
+================================================================================
+                            AUTHORIZATION
+================================================================================
+
+This notification is submitted on behalf of [Organization Name]
+as authorized data processor.
+
+Signed and Submitted on: 22/5/2026
+
+________________________________________________________________________________
+
+NOTE: This is a computer-generated letter. The organization's official 
+seal/signature and Data Protection Officer's digital signature should be 
+affixed before submission to the Data Protection Board.
+
+================================================================================

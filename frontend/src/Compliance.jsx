@@ -2,15 +2,27 @@ import React, { useState, useEffect } from 'react';
 
 function Compliance() {
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    fetchComplianceItems();
-  }, []);
+  const getDefaultComplianceItems = () => [
+    { id: 1, title: 'Data Inventory Mapping', category: 'Data Governance', completed: false, dueDate: '2026-06-30' },
+    { id: 2, title: 'Privacy Impact Assessment', category: 'Assessment', completed: false, dueDate: '2026-06-30' },
+    { id: 3, title: 'Consent Management System', category: 'Consent', completed: false, dueDate: '2026-07-15' },
+    { id: 4, title: 'Data Subject Rights Portal', category: 'Rights', completed: false, dueDate: '2026-07-15' },
+    { id: 5, title: 'Breach Notification Procedure', category: 'Security', completed: false, dueDate: '2026-06-15' },
+    { id: 6, title: 'Data Processing Records', category: 'Documentation', completed: false, dueDate: '2026-07-01' },
+    { id: 7, title: 'Third-party Audits', category: 'Audit', completed: false, dueDate: '2026-08-01' },
+    { id: 8, title: 'Staff Training Program', category: 'Training', completed: false, dueDate: '2026-06-30' },
+    { id: 9, title: 'Data Retention Policy', category: 'Policy', completed: false, dueDate: '2026-07-01' },
+    { id: 10, title: 'Encryption Implementation', category: 'Security', completed: false, dueDate: '2026-06-30' },
+    { id: 11, title: 'Access Control Matrix', category: 'Access', completed: false, dueDate: '2026-06-15' },
+    { id: 12, title: 'Incident Response Plan', category: 'Response', completed: false, dueDate: '2026-06-30' },
+    { id: 13, title: 'Data Processing Agreements', category: 'Contracts', completed: false, dueDate: '2026-07-15' },
+    { id: 14, title: 'Cross-border Transfer Mechanism', category: 'Transfer', completed: false, dueDate: '2026-08-01' },
+    { id: 15, title: 'Compliance Audit', category: 'Audit', completed: false, dueDate: '2026-08-15' },
+  ];
 
   const fetchComplianceItems = async () => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -46,28 +58,12 @@ function Compliance() {
       console.error('Error fetching compliance items:', error);
       // Set default items on error
       setItems(getDefaultComplianceItems());
-    } finally {
-      setLoading(false);
     }
   };
 
-  const getDefaultComplianceItems = () => [
-    { id: 1, title: 'Data Inventory Mapping', category: 'Data Governance', completed: false, dueDate: '2026-06-30' },
-    { id: 2, title: 'Privacy Impact Assessment', category: 'Assessment', completed: false, dueDate: '2026-06-30' },
-    { id: 3, title: 'Consent Management System', category: 'Consent', completed: false, dueDate: '2026-07-15' },
-    { id: 4, title: 'Data Subject Rights Portal', category: 'Rights', completed: false, dueDate: '2026-07-15' },
-    { id: 5, title: 'Breach Notification Procedure', category: 'Security', completed: false, dueDate: '2026-06-15' },
-    { id: 6, title: 'Data Processing Records', category: 'Documentation', completed: false, dueDate: '2026-07-01' },
-    { id: 7, title: 'Third-party Audits', category: 'Audit', completed: false, dueDate: '2026-08-01' },
-    { id: 8, title: 'Staff Training Program', category: 'Training', completed: false, dueDate: '2026-06-30' },
-    { id: 9, title: 'Data Retention Policy', category: 'Policy', completed: false, dueDate: '2026-07-01' },
-    { id: 10, title: 'Encryption Implementation', category: 'Security', completed: false, dueDate: '2026-06-30' },
-    { id: 11, title: 'Access Control Matrix', category: 'Access', completed: false, dueDate: '2026-06-15' },
-    { id: 12, title: 'Incident Response Plan', category: 'Response', completed: false, dueDate: '2026-06-30' },
-    { id: 13, title: 'Data Processing Agreements', category: 'Contracts', completed: false, dueDate: '2026-07-15' },
-    { id: 14, title: 'Cross-border Transfer Mechanism', category: 'Transfer', completed: false, dueDate: '2026-08-01' },
-    { id: 15, title: 'Compliance Audit', category: 'Audit', completed: false, dueDate: '2026-08-15' },
-  ];
+  useEffect(() => {
+    fetchComplianceItems();
+  }, []);
 
   const toggleComplete = async (itemId) => {
     const updatedItems = items.map(item =>

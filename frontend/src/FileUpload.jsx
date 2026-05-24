@@ -138,19 +138,25 @@ function FileUpload() {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${API_URL}/api/departments`);
       const data = await response.json();
+      console.log('Departments loaded:', data);
       setDepartments(data.departments || data.data || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
+      setDepartments([]);
     }
   };
 
-  const handleShareFile = async (fileId) => {
+  const handleShareFile = (fileId) => {
+    console.log('Opening share modal for file:', fileId);
     setShareModal(fileId);
+    setShareFormData({ receiverDepartmentId: '', purpose: '' });
     fetchDepartments();
   };
 
   const handleShareSubmit = async (e) => {
     e.preventDefault();
+    console.log('Share form submitted:', shareFormData);
+    
     if (!shareFormData.receiverDepartmentId || !shareFormData.purpose) {
       setMessage('❌ Please fill all fields');
       return;
@@ -161,7 +167,9 @@ function FileUpload() {
       const token = localStorage.getItem('token');
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-      const response = await fetch(`${API_URL}/api/files/${shareModal}/share`, {
+      console.log('Sharing file:', shareModal, 'with dept:', shareFormData.receiverDepartmentId);
+
+      const response = await fetch(`${API_URL}/api/file-sharing/${shareModal}/share`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -173,15 +181,19 @@ function FileUpload() {
         })
       });
 
+      const data = await response.json();
+      console.log('Share response:', data);
+
       if (response.ok) {
-        setMessage('✅ File shared! Waiting for approval...');
+        setMessage('✅ File shared successfully! Waiting for approval...');
         setShareModal(null);
         setShareFormData({ receiverDepartmentId: '', purpose: '' });
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage('❌ Failed to share file');
+        setMessage('❌ Failed to share: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
+      console.error('Share error:', error);
       setMessage('❌ Error: ' + error.message);
     } finally {
       setLoading(false);
@@ -412,42 +424,48 @@ function FileUpload() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(0,0,0,0.7)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000
         }}>
           <div style={{
-            background: 'white',
+            background: '#0f172a',
+            border: '2px solid #06b6d4',
             borderRadius: '0.75rem',
             padding: '2rem',
             maxWidth: '500px',
             width: '90%',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+            boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
           }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', margin: '0 0 1.5rem 0' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', margin: '0 0 1.5rem 0', color: '#e2e8f0' }}>
               📤 Share File with Department
             </h2>
 
             <form onSubmit={handleShareSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#cbd5e1' }}>
                   Select Department
                 </label>
                 <select
                   value={shareFormData.receiverDepartmentId}
-                  onChange={(e) => setShareFormData({
-                    ...shareFormData,
-                    receiverDepartmentId: e.target.value
-                  })}
+                  onChange={(e) => {
+                    console.log('Department selected:', e.target.value);
+                    setShareFormData({
+                      ...shareFormData,
+                      receiverDepartmentId: e.target.value
+                    });
+                  }}
                   required
                   style={{
                     width: '100%',
-                    padding: '0.5rem 1rem',
-                    border: '1px solid #ddd',
+                    padding: '0.75rem',
+                    border: '1px solid #06b6d4',
                     borderRadius: '0.5rem',
-                    fontFamily: 'inherit'
+                    fontFamily: 'inherit',
+                    background: '#1a1f3a',
+                    color: '#e2e8f0'
                   }}
                 >
                   <option value="">-- Select Department --</option>
@@ -460,24 +478,29 @@ function FileUpload() {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#cbd5e1' }}>
                   Purpose of Share
                 </label>
                 <textarea
                   value={shareFormData.purpose}
-                  onChange={(e) => setShareFormData({
-                    ...shareFormData,
-                    purpose: e.target.value
-                  })}
+                  onChange={(e) => {
+                    console.log('Purpose entered:', e.target.value);
+                    setShareFormData({
+                      ...shareFormData,
+                      purpose: e.target.value
+                    });
+                  }}
                   placeholder="e.g., Data Analysis, Audit, Compliance Check"
                   rows="3"
                   required
                   style={{
                     width: '100%',
-                    padding: '0.5rem 1rem',
-                    border: '1px solid #ddd',
+                    padding: '0.75rem',
+                    border: '1px solid #06b6d4',
                     borderRadius: '0.5rem',
                     fontFamily: 'inherit',
+                    background: '#1a1f3a',
+                    color: '#e2e8f0',
                     resize: 'vertical'
                   }}
                 />
@@ -486,11 +509,15 @@ function FileUpload() {
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button
                   type="button"
-                  onClick={() => setShareModal(null)}
+                  onClick={() => {
+                    console.log('Closing modal');
+                    setShareModal(null);
+                    setShareFormData({ receiverDepartmentId: '', purpose: '' });
+                  }}
                   style={{
                     flex: 1,
-                    background: '#e5e7eb',
-                    color: '#333',
+                    background: '#334155',
+                    color: '#e2e8f0',
                     border: 'none',
                     padding: '0.75rem',
                     borderRadius: '0.5rem',
@@ -505,7 +532,7 @@ function FileUpload() {
                   disabled={loading}
                   style={{
                     flex: 1,
-                    background: loading ? '#9ca3af' : '#2563eb',
+                    background: loading ? '#475569' : '#10b981',
                     color: 'white',
                     border: 'none',
                     padding: '0.75rem',

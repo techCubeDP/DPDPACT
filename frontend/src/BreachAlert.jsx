@@ -25,9 +25,10 @@ function BreachAlert() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      setBreaches(data.data || []);
+      setBreaches(data.data || data.breaches || []);
     } catch (error) {
       console.error('Error fetching breaches:', error);
+      setBreaches([]);
     }
   };
 
@@ -37,6 +38,68 @@ function BreachAlert() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const generateNotificationLetter = (breach) => {
+    const today = new Date().toLocaleDateString('en-IN');
+    const letter = `DPDP ACT COMPLIANCE - DATA BREACH NOTIFICATION LETTER
+
+Date: ${today}
+
+Subject: Notification of Personal Data Breach under DPDP Act, 2023
+
+Dear Data Subject,
+
+This letter is to inform you that a data breach has occurred involving your personal data held by our organization.
+
+BREACH DETAILS:
+================
+Breach Title: ${breach.title}
+Severity Level: ${breach.severity.toUpperCase()}
+Data Type Affected: ${breach.data_type || 'Personal Identifiable Information (PII)'}
+Number of Records Affected: ${breach.affected_records || 0}
+Date of Discovery: ${new Date(breach.created_at).toLocaleDateString('en-IN')}
+
+DESCRIPTION:
+============
+${breach.description || 'A data breach has been identified in our systems.'}
+
+OUR RESPONSE:
+=============
+1. We have immediately secured the affected data and prevented further unauthorized access
+2. An investigation has been launched to determine the full scope and impact
+3. We are implementing additional security measures to prevent similar incidents
+4. All relevant authorities are being notified as required by law
+
+YOUR RIGHTS UNDER DPDP ACT:
+===========================
+- Right to know details of the breach
+- Right to seek compensation for harm caused
+- Right to request deletion of affected data
+- Right to lodge complaints with the Data Protection Board
+
+RECOMMENDED ACTIONS:
+====================
+1. Change your passwords immediately
+2. Monitor your accounts for suspicious activity
+3. Consider enabling two-factor authentication
+4. Report any unauthorized access to us immediately
+5. File a complaint with DPDP if you believe your rights have been violated
+
+CONTACT INFORMATION:
+====================
+For any queries or to report suspicious activity, please contact:
+Email: compliance@dpdp-compliance.gov.in
+Phone: +91-11-XXXX-XXXX
+Website: www.dpdp-compliance.gov.in
+
+We deeply regret this incident and are committed to protecting your personal data.
+
+Sincerely,
+Data Protection Officer
+DPDP Compliance Organization`;
+    
+    return letter;
   };
 
   const handleSubmit = async (e) => {
@@ -68,6 +131,10 @@ function BreachAlert() {
 
       const breach = await createResponse.json();
 
+      // Generate notification letter
+      const letter = generateNotificationLetter(breach.data);
+      setGeneratedLetter(letter);
+
       setFormData({
         title: '',
         severity: 'medium',
@@ -75,7 +142,7 @@ function BreachAlert() {
         affectedRecords: '',
       });
 
-      alert('✅ Breach reported successfully!');
+      alert('✅ Breach reported and notification letter generated!');
       fetchBreaches();
       setShowForm(false);
     } catch (error) {
@@ -94,7 +161,7 @@ function BreachAlert() {
   const downloadLetter = () => {
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(generatedLetter));
-    element.setAttribute('download', 'DPDP_Breach_Notification.txt');
+    element.setAttribute('download', 'DPDP_Breach_Notification_Letter.txt');
     element.style.display = 'none';
     document.body.appendChild(element);
     element.click();
@@ -119,7 +186,7 @@ function BreachAlert() {
           🚨 Breach Alert & DPDP Notification
         </h1>
         <p style={{ color: '#666', margin: 0 }}>
-          Report breaches and generate notification letters
+          Report breaches and auto-generate notification letters
         </p>
       </div>
 
@@ -259,10 +326,74 @@ function BreachAlert() {
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? '⏳ Reporting...' : '📝 Report Breach'}
+              {loading ? '⏳ Generating...' : '📝 Report & Generate Letter'}
             </button>
           </div>
         </form>
+      )}
+
+      {/* Letter */}
+      {generatedLetter && (
+        <div
+          style={{
+            background: '#e8f5e9',
+            border: '2px solid #4caf50',
+            borderRadius: '0.75rem',
+            padding: '1.5rem',
+            marginBottom: '2rem'
+          }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1b5e20', marginTop: 0 }}>
+            📄 Generated DPDP Notification Letter
+          </h2>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <button
+              onClick={copyToClipboard}
+              style={{
+                background: '#4caf50',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              📋 Copy
+            </button>
+            <button
+              onClick={downloadLetter}
+              style={{
+                background: '#2196f3',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              ⬇️ Download
+            </button>
+          </div>
+
+          <pre
+            style={{
+              background: 'white',
+              border: '1px solid #c8e6c9',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              overflow: 'auto',
+              maxHeight: '400px',
+              fontSize: '0.75rem',
+              lineHeight: '1.6',
+              color: '#333'
+            }}
+          >
+            {generatedLetter}
+          </pre>
+        </div>
       )}
 
       {/* Breach History */}

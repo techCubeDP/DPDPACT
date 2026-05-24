@@ -1,461 +1,328 @@
 import React, { useState, useEffect } from 'react';
 
 function FileSharing() {
-  const [myFiles, setMyFiles] = useState([]);
+  const [sharedWithMe, setSharedWithMe] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [shareFormData, setShareFormData] = useState({
-    receiverDepartmentId: '',
-    purpose: ''
-  });
+  const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('received');
 
-useEffect(() => {
-  fetchAllData();
-}, []);
+  useEffect(() => {
+    fetchSharedFiles();
+    fetchPendingApprovals();
+  }, []);
 
-const fetchAllData = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
-    // Fetch my files
-    const filesRes = await fetch(`${API_URL}/api/files/my-files`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const files = await filesRes.json();
-    setMyFiles(files);
-
-    // Fetch departments
-    const deptRes = await fetch(`${API_URL}/api/departments`);
-    const depts = await deptRes.json();
-    setDepartments(depts);
-
-    // Fetch ALL shares (pending + approved)
-    const approvalsRes = await fetch(`${API_URL}/api/files/approvals/pending`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const approvals = await approvalsRes.json();
-    setPendingApprovals(approvals);
-
-    setLoading(false);
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    setLoading(false);
-  }
-};
-
-  const handleShareClick = (fileId) => {
-    setShowShareModal(fileId);
-    setShareFormData({ receiverDepartmentId: '', purpose: '' });
-  };
-
-  const handleShareSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-
+  const fetchSharedFiles = async () => {
     try {
       const token = localStorage.getItem('token');
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-      const response = await fetch(`${API_URL}/api/files/${showShareModal}/share`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          receiverDepartmentId: parseInt(shareFormData.receiverDepartmentId),
-          purpose: shareFormData.purpose
-        })
+      const response = await fetch(`${API_URL}/api/file-sharing/shared-with-me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (!response.ok) {
-        throw new Error('Share failed');
-      }
-
-      alert('✅ File shared! Waiting for approval...');
-      setShowShareModal(null);
-      setShareFormData({ receiverDepartmentId: '', purpose: '' });
-      fetchAllData();
+      const data = await response.json();
+      setSharedWithMe(data.sharedFiles || data.data || []);
     } catch (error) {
-      console.error('Error:', error);
-      alert('❌ Error: ' + error.message);
-    } finally {
-      setSubmitting(false);
+      console.error('Error fetching shared files:', error);
+      setSharedWithMe([]);
+    }
+  };
+
+  const fetchPendingApprovals = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+      const response = await fetch(`${API_URL}/api/file-sharing/approvals/pending`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const data = await response.json();
+      setPendingApprovals(data.pendingApprovals || data.data || []);
+    } catch (error) {
+      console.error('Error fetching pending approvals:', error);
+      setPendingApprovals([]);
     }
   };
 
   const handleApprove = async (shareId) => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-      const response = await fetch(`${API_URL}/api/files/${shareId}/approve`, {
+      const response = await fetch(`${API_URL}/api/file-sharing/approvals/${shareId}/approve`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ approved: true })
+        }
       });
 
-      if (!response.ok) throw new Error('Approve failed');
-
-      alert('✅ Share approved!');
-      fetchAllData();
+      if (response.ok) {
+        setMessage('✅ File share approved!');
+        fetchPendingApprovals();
+        fetchSharedFiles();
+        setTimeout(() => setMessage(''), 3000);
+      }
     } catch (error) {
-      alert('❌ Error: ' + error.message);
+      setMessage('❌ Error: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleReject = async (shareId) => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-      const response = await fetch(`${API_URL}/api/files/${shareId}/approve`, {
+      const response = await fetch(`${API_URL}/api/file-sharing/approvals/${shareId}/reject`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ approved: false })
+        }
       });
 
-      if (!response.ok) throw new Error('Reject failed');
-
-      alert('✅ Share rejected');
-      fetchAllData();
-    } catch (error) {
-      alert('❌ Error: ' + error.message);
-    }
-  };
-
-  const handleDownload = async (shareId, filename) => {
-    try {
-      const token = localStorage.getItem('token');
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
-      const response = await fetch(`${API_URL}/api/files/${shareId}/download`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        throw new Error('Download failed');
+      if (response.ok) {
+        setMessage('✅ File share rejected');
+        fetchPendingApprovals();
+        setTimeout(() => setMessage(''), 3000);
       }
-
-      // Create blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(link);
-
-      alert('✅ File downloaded!');
     } catch (error) {
-      alert('❌ Error: ' + error.message);
+      setMessage('❌ Error: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
-
-  if (loading) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
-  }
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', margin: '0 0 1rem 0' }}>
-          🔄 File Sharing & Approvals
+      <div style={{
+        background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+        color: 'white',
+        padding: '2rem',
+        borderRadius: '0.75rem',
+        marginBottom: '2rem',
+        textAlign: 'center',
+        boxShadow: '0 4px 15px rgba(6, 182, 212, 0.4)'
+      }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>
+          📤 File Sharing & Approvals
         </h1>
-        <p style={{ color: '#666', margin: 0 }}>
-          Share files securely with other departments
+        <p style={{ margin: 0, opacity: 0.95 }}>
+          Securely share files between departments with approval workflow
         </p>
       </div>
 
-      {/* Share Modal */}
-      {showShareModal && (
+      {/* Message */}
+      {message && (
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
+          background: message.includes('✅') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+          color: message.includes('✅') ? '#86efac' : '#fca5a5',
+          padding: '1rem',
+          borderRadius: '0.5rem',
+          marginBottom: '1.5rem',
+          border: message.includes('✅') ? '1px solid #10b981' : '1px solid #ef4444'
         }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '0.75rem',
-            padding: '2rem',
-            maxWidth: '500px',
-            width: '90%',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
-          }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', margin: '0 0 1.5rem 0' }}>
-              📤 Share File
-            </h2>
-
-            <form onSubmit={handleShareSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
-                  Send To Department
-                </label>
-                <select
-                  value={shareFormData.receiverDepartmentId}
-                  onChange={(e) => setShareFormData((prev) => ({
-                    ...prev,
-                    receiverDepartmentId: e.target.value
-                  }))}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 1rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '0.5rem',
-                    fontFamily: 'inherit'
-                  }}
-                >
-                  <option value="">-- Select Department --</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
-                  Purpose of Share
-                </label>
-                <textarea
-                  value={shareFormData.purpose}
-                  onChange={(e) => setShareFormData((prev) => ({
-                    ...prev,
-                    purpose: e.target.value
-                  }))}
-                  placeholder="e.g., Data Analysis, Audit, Compliance Check"
-                  rows="3"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 1rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '0.5rem',
-                    fontFamily: 'inherit',
-                    resize: 'vertical'
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowShareModal(null)}
-                  style={{
-                    flex: 1,
-                    background: '#e5e7eb',
-                    color: '#333',
-                    border: 'none',
-                    padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  style={{
-                    flex: 1,
-                    background: submitting ? '#9ca3af' : '#2563eb',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    fontWeight: '600',
-                    cursor: submitting ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {submitting ? '⏳ Sharing...' : '📤 Share File'}
-                </button>
-              </div>
-            </form>
-          </div>
+          {message}
         </div>
       )}
 
-      {/* My Files for Sharing */}
-      <div style={{ marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
-          📁 My Files
-        </h2>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <button
+          onClick={() => setActiveTab('received')}
+          style={{
+            background: activeTab === 'received' ? '#06b6d4' : '#334155',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.3s'
+          }}
+        >
+          📥 Files Shared With Me ({sharedWithMe.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('approvals')}
+          style={{
+            background: activeTab === 'approvals' ? '#06b6d4' : '#334155',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.3s'
+          }}
+        >
+          ⏳ Pending Approvals ({pendingApprovals.length})
+        </button>
+      </div>
 
-        {myFiles.length === 0 ? (
-          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '2rem', textAlign: 'center', color: '#999' }}>
-            No files uploaded yet
-          </div>
-        ) : (
-          <div style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      {/* Received Files Tab */}
+      {activeTab === 'received' && (
+        <div style={{
+          background: '#1a1f3a',
+          borderRadius: '0.75rem',
+          padding: '1.5rem',
+          border: '1px solid #06b6d4'
+        }}>
+          <h2 style={{ color: '#06b6d4', marginBottom: '1rem' }}>📥 Files Shared With Me</h2>
+
+          {sharedWithMe.length === 0 ? (
+            <p style={{ color: '#94a3b8', textAlign: 'center' }}>No files shared with you yet</p>
+          ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f3f4f6', borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Filename</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Size</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Uploaded</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600' }}>Action</th>
+                <tr style={{ borderBottom: '2px solid #06b6d4' }}>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#06b6d4', fontWeight: '600' }}>
+                    Filename
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#06b6d4', fontWeight: '600' }}>
+                    From
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#06b6d4', fontWeight: '600' }}>
+                    Purpose
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#06b6d4', fontWeight: '600' }}>
+                    Status
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'left', color: '#06b6d4', fontWeight: '600' }}>
+                    Shared Date
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {myFiles.map((file) => (
-                  <tr key={file.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '1rem', color: '#111827' }}>📄 {file.filename}</td>
-                    <td style={{ padding: '1rem', color: '#666' }}>{(file.file_size / 1024 / 1024).toFixed(2)} MB</td>
-                    <td style={{ padding: '1rem', color: '#666', fontSize: '0.875rem' }}>
-                      {new Date(file.created_at).toLocaleDateString()}
+                {sharedWithMe.map((share, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #334155', background: 'rgba(6, 182, 212, 0.05)' }}>
+                    <td style={{ padding: '1rem', color: '#e2e8f0' }}>📄 {share.filename}</td>
+                    <td style={{ padding: '1rem', color: '#cbd5e1' }}>{share.sender_email}</td>
+                    <td style={{ padding: '1rem', color: '#cbd5e1', maxWidth: '300px' }}>
+                      {share.purpose}
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <button
-                        onClick={() => handleShareClick(file.id)}
-                        style={{
-                          background: '#16a34a',
-                          color: 'white',
-                          border: 'none',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.5rem',
-                          cursor: 'pointer',
-                          fontWeight: '600'
-                        }}
-                      >
-                        Share
-                      </button>
+                      <span style={{
+                        background: share.approval_status === 'approved' ? '#10b98120' : '#06b6d420',
+                        color: share.approval_status === 'approved' ? '#86efac' : '#67e8f9',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '1rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '600'
+                      }}>
+                        {share.approval_status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem', color: '#cbd5e1' }}>
+                      {new Date(share.shared_at).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Pending Approvals */}
-      <div>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
-          ⏳ Pending & Approved Shares
-        </h2>
+      {/* Approvals Tab */}
+      {activeTab === 'approvals' && (
+        <div style={{
+          background: '#1a1f3a',
+          borderRadius: '0.75rem',
+          padding: '1.5rem',
+          border: '1px solid #f59e0b'
+        }}>
+          <h2 style={{ color: '#f59e0b', marginBottom: '1rem' }}>⏳ Pending File Share Approvals</h2>
 
-        {pendingApprovals.length === 0 ? (
-          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '2rem', textAlign: 'center', color: '#999' }}>
-            No pending approvals
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {pendingApprovals.map((share) => (
-              <div
-                key={share.id}
-                style={{
-                  background: share.approval_status === 'approved' ? '#f0fdf4' : 'white',
-                  borderRadius: '0.75rem',
-                  padding: '1.5rem',
-                  borderLeft: share.approval_status === 'approved' ? '5px solid #16a34a' : '5px solid #ff6f00',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', margin: '0 0 0.5rem 0' }}>
-                      {share.filename}
-                    </h3>
-                    <p style={{ color: '#666', fontSize: '0.875rem', margin: '0.25rem 0' }}>
-                      From: <strong>{share.sender}</strong>
-                    </p>
-                    <p style={{ color: '#666', fontSize: '0.875rem', margin: '0.25rem 0' }}>
-                      To: <strong>{share.receiver_dept}</strong>
-                    </p>
+          {pendingApprovals.length === 0 ? (
+            <p style={{ color: '#94a3b8', textAlign: 'center' }}>No pending approvals</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {pendingApprovals.map((approval, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: '#0f172a',
+                    border: '2px solid #f59e0b',
+                    borderRadius: '0.75rem',
+                    padding: '1.5rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#e2e8f0', margin: '0 0 0.5rem 0' }}>
+                        📄 {approval.filename}
+                      </h3>
+                      <p style={{ fontSize: '0.875rem', color: '#cbd5e1', margin: '0.25rem 0' }}>
+                        <strong>From:</strong> {approval.sender}
+                      </p>
+                      <p style={{ fontSize: '0.875rem', color: '#cbd5e1', margin: '0.25rem 0' }}>
+                        <strong>Department:</strong> {approval.receiver_dept}
+                      </p>
+                    </div>
+                    <span style={{
+                      background: '#f59e0b20',
+                      color: '#fbbf24',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '1rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '600'
+                    }}>
+                      PENDING
+                    </span>
                   </div>
-                  <span style={{
-                    background: share.approval_status === 'approved' ? '#dcfce7' : '#fef3c7',
-                    color: share.approval_status === 'approved' ? '#166534' : '#92400e',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '1rem',
-                    fontSize: '0.75rem',
-                    fontWeight: '600'
-                  }}>
-                    {share.approval_status === 'approved' ? '✅ APPROVED' : '⏳ PENDING'}
-                  </span>
+
+                  <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: '1rem 0' }}>
+                    <strong>Purpose:</strong> {approval.purpose}
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      onClick={() => handleApprove(approval.id)}
+                      disabled={loading}
+                      style={{
+                        flex: 1,
+                        background: loading ? '#475569' : '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        fontWeight: '600',
+                        cursor: loading ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      ✅ Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(approval.id)}
+                      disabled={loading}
+                      style={{
+                        flex: 1,
+                        background: loading ? '#475569' : '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        fontWeight: '600',
+                        cursor: loading ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      ❌ Reject
+                    </button>
+                  </div>
                 </div>
-
-                <p style={{ color: '#555', fontSize: '0.875rem', margin: '0.75rem 0', fontStyle: 'italic' }}>
-                  Purpose: {share.purpose}
-                </p>
-
-                {share.approval_status === 'pending' ? (
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button
-                      onClick={() => handleApprove(share.id)}
-                      style={{
-                        background: '#16a34a',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.5rem 1.5rem',
-                        borderRadius: '0.5rem',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      ✓ Approve
-                    </button>
-                    <button
-                      onClick={() => handleReject(share.id)}
-                      style={{
-                        background: '#dc2626',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.5rem 1.5rem',
-                        borderRadius: '0.5rem',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      ✕ Reject
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button
-                      onClick={() => handleDownload(share.id, share.filename)}
-                      style={{
-                        background: '#2563eb',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.5rem 1.5rem',
-                        borderRadius: '0.5rem',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      ⬇️ Download File
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

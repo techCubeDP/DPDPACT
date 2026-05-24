@@ -3,9 +3,8 @@ import React, { useState, useEffect } from 'react';
 function FileSharing() {
   const [myFiles, setMyFiles] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
-  //const [completedShares, setCompletedShares] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [shareFormData, setShareFormData] = useState({
@@ -14,27 +13,28 @@ function FileSharing() {
   });
 
 useEffect(() => {
-  fetchComplianceItems();
-}, [fetchComplianceItems]);
+  fetchAllData();
+}, []);
 
 const fetchAllData = async () => {
   try {
     const token = localStorage.getItem('token');
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
     // Fetch my files
-    const filesRes = await fetch('/api/files/my-files', {
+    const filesRes = await fetch(`${API_URL}/api/files/my-files`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const files = await filesRes.json();
     setMyFiles(files);
 
     // Fetch departments
-    const deptRes = await fetch('/api/departments');
+    const deptRes = await fetch(`${API_URL}/api/departments`);
     const depts = await deptRes.json();
     setDepartments(depts);
 
     // Fetch ALL shares (pending + approved)
-    const approvalsRes = await fetch('/api/files/approvals/pending', {
+    const approvalsRes = await fetch(`${API_URL}/api/files/approvals/pending`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const approvals = await approvalsRes.json();
@@ -58,7 +58,9 @@ const fetchAllData = async () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/files/${showShareModal}/share`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+      const response = await fetch(`${API_URL}/api/files/${showShareModal}/share`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -89,7 +91,9 @@ const fetchAllData = async () => {
   const handleApprove = async (shareId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/files/${shareId}/approve`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+      const response = await fetch(`${API_URL}/api/files/${shareId}/approve`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -110,7 +114,9 @@ const fetchAllData = async () => {
   const handleReject = async (shareId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/files/${shareId}/approve`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+      const response = await fetch(`${API_URL}/api/files/${shareId}/approve`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -127,33 +133,36 @@ const fetchAllData = async () => {
       alert('❌ Error: ' + error.message);
     }
   };
+
   const handleDownload = async (shareId, filename) => {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`/api/files/${shareId}/download`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    try {
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-    if (!response.ok) {
-      throw new Error('Download failed');
+      const response = await fetch(`${API_URL}/api/files/${shareId}/download`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      alert('✅ File downloaded!');
+    } catch (error) {
+      alert('❌ Error: ' + error.message);
     }
-
-    // Create blob and download
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(link);
-
-    alert('✅ File downloaded!');
-  } catch (error) {
-    alert('❌ Error: ' + error.message);
-  }
-};
+  };
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;

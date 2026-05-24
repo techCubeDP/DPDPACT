@@ -18,9 +18,14 @@ function BreachAlert() {
 
   const fetchBreaches = async () => {
     try {
-      const response = await fetch('/api/breaches');
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_URL}/api/breaches`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await response.json();
-      setBreaches(data);
+      setBreaches(data.data || []);
     } catch (error) {
       console.error('Error fetching breaches:', error);
     }
@@ -39,11 +44,20 @@ function BreachAlert() {
     setLoading(true);
 
     try {
-      const createResponse = await fetch('/api/breaches/create', {
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+      const createResponse = await fetch(`${API_URL}/api/breaches`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          ...formData,
+          title: formData.title,
+          dataType: 'PII',
+          severity: formData.severity,
+          description: formData.description,
           affectedRecords: parseInt(formData.affectedRecords),
         }),
       });
@@ -54,17 +68,6 @@ function BreachAlert() {
 
       const breach = await createResponse.json();
 
-      const letterResponse = await fetch(`/api/breaches/${breach.id}/generate-letter`, {
-        method: 'POST',
-      });
-
-      if (!letterResponse.ok) {
-        throw new Error('Failed to generate letter');
-      }
-
-      const letterData = await letterResponse.json();
-      setGeneratedLetter(letterData.letter);
-
       setFormData({
         title: '',
         severity: 'medium',
@@ -72,6 +75,7 @@ function BreachAlert() {
         affectedRecords: '',
       });
 
+      alert('✅ Breach reported successfully!');
       fetchBreaches();
       setShowForm(false);
     } catch (error) {
@@ -90,7 +94,7 @@ function BreachAlert() {
   const downloadLetter = () => {
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(generatedLetter));
-    element.setAttribute('download', 'DPB_Breach_Notification.txt');
+    element.setAttribute('download', 'DPDP_Breach_Notification.txt');
     element.style.display = 'none';
     document.body.appendChild(element);
     element.click();
@@ -112,10 +116,10 @@ function BreachAlert() {
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#111827', margin: '0 0 1rem 0' }}>
-          🚨 Breach Alert & DPB Notification
+          🚨 Breach Alert & DPDP Notification
         </h1>
         <p style={{ color: '#666', margin: 0 }}>
-          Report breaches and auto-generate notification letters
+          Report breaches and generate notification letters
         </p>
       </div>
 
@@ -255,74 +259,10 @@ function BreachAlert() {
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? '⏳ Generating...' : '📝 Report & Generate Letter'}
+              {loading ? '⏳ Reporting...' : '📝 Report Breach'}
             </button>
           </div>
         </form>
-      )}
-
-      {/* Letter */}
-      {generatedLetter && (
-        <div
-          style={{
-            background: '#e8f5e9',
-            border: '2px solid #4caf50',
-            borderRadius: '0.75rem',
-            padding: '1.5rem',
-            marginBottom: '2rem'
-          }}
-        >
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1b5e20', marginTop: 0 }}>
-            📄 Generated DPB Notification Letter
-          </h2>
-
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <button
-              onClick={copyToClipboard}
-              style={{
-                background: '#4caf50',
-                color: 'white',
-                border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '0.5rem',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              📋 Copy
-            </button>
-            <button
-              onClick={downloadLetter}
-              style={{
-                background: '#2196f3',
-                color: 'white',
-                border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '0.5rem',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              ⬇️ Download
-            </button>
-          </div>
-
-          <pre
-            style={{
-              background: 'white',
-              border: '1px solid #c8e6c9',
-              borderRadius: '0.5rem',
-              padding: '1rem',
-              overflow: 'auto',
-              maxHeight: '400px',
-              fontSize: '0.75rem',
-              lineHeight: '1.6',
-              color: '#333'
-            }}
-          >
-            {generatedLetter}
-          </pre>
-        </div>
       )}
 
       {/* Breach History */}
@@ -374,13 +314,10 @@ function BreachAlert() {
 
                 <div style={{ fontSize: '0.875rem', color: '#666', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <p style={{ margin: 0 }}>
-                    <strong>Date:</strong> {new Date(breach.detected_at).toLocaleDateString('en-IN')}
+                    <strong>Date:</strong> {new Date(breach.created_at).toLocaleDateString('en-IN')}
                   </p>
                   <p style={{ margin: 0 }}>
                     <strong>Affected:</strong> {breach.affected_records} records
-                  </p>
-                  <p style={{ margin: 0 }}>
-                    <strong>Status:</strong> {breach.status}
                   </p>
                   <p style={{ margin: '0.75rem 0 0 0', color: '#555', lineHeight: '1.5' }}>
                     {breach.description}

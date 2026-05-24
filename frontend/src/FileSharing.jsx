@@ -5,7 +5,7 @@ function FileSharing() {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   //const [completedShares, setCompletedShares] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [shareFormData, setShareFormData] = useState({
@@ -13,9 +13,9 @@ function FileSharing() {
     purpose: ''
   });
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
+useEffect(() => {
+  fetchComplianceItems();
+}, [fetchComplianceItems]);
 
 const fetchAllData = async () => {
   try {

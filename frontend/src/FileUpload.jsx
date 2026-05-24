@@ -7,6 +7,12 @@ function FileUpload() {
   const [message, setMessage] = useState('');
   const [retentionDays, setRetentionDays] = useState('30');
   const [piiScanResults, setPiiScanResults] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const [shareModal, setShareModal] = useState(null);
+  const [shareFormData, setShareFormData] = useState({
+    receiverDepartmentId: '',
+    purpose: ''
+  });
 
   const detectPII = (content) => {
     const piiPatterns = {
@@ -127,6 +133,61 @@ function FileUpload() {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/departments`);
+      const data = await response.json();
+      setDepartments(data.departments || data.data || []);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  const handleShareFile = async (fileId) => {
+    setShareModal(fileId);
+    fetchDepartments();
+  };
+
+  const handleShareSubmit = async (e) => {
+    e.preventDefault();
+    if (!shareFormData.receiverDepartmentId || !shareFormData.purpose) {
+      setMessage('❌ Please fill all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+      const response = await fetch(`${API_URL}/api/files/${shareModal}/share`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          receiverDepartmentId: parseInt(shareFormData.receiverDepartmentId),
+          purpose: shareFormData.purpose
+        })
+      });
+
+      if (response.ok) {
+        setMessage('✅ File shared! Waiting for approval...');
+        setShareModal(null);
+        setShareFormData({ receiverDepartmentId: '', purpose: '' });
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('❌ Failed to share file');
+      }
+    } catch (error) {
+      setMessage('❌ Error: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   React.useEffect(() => {
     fetchFiles();
   }, []);
@@ -168,10 +229,10 @@ function FileUpload() {
         boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
       }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>
-          📁 Secure File Upload
+          📁 Secure File Upload & Sharing
         </h1>
         <p style={{ margin: 0, opacity: 0.95 }}>
-          Upload with automatic PII detection & retention management
+          Upload with automatic PII detection & secure sharing with other departments
         </p>
       </div>
 
@@ -336,37 +397,128 @@ function FileUpload() {
                   <div style={{ color: '#cbd5e1', fontSize: '0.875rem' }}>
                     Found: <strong>{data.count}</strong> match(es)
                   </div>
-                  {data.samples.length > 0 && (
-                    <div style={{
-                      color: '#94a3b8',
-                      fontSize: '0.75rem',
-                      marginTop: '0.5rem',
-                      fontFamily: 'monospace',
-                      maxHeight: '60px',
-                      overflow: 'auto'
-                    }}>
-                      {data.samples.map((sample, idx) => (
-                        <div key={idx} style={{ wordBreak: 'break-all' }}>
-                          {sample.substring(0, 30)}...
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
 
-          <p style={{
-            color: '#cbd5e1',
-            fontSize: '0.875rem',
-            margin: '1rem 0 0 0',
-            lineHeight: '1.6'
+      {/* Share Modal */}
+      {shareModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '0.75rem',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
           }}>
-            {piiScanResults.hasPII
-              ? '⚠️ This file contains personal data. Ensure proper data protection measures are in place before sharing.'
-              : '✅ Safe to share. No sensitive personal information detected.'}
-          </p>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', margin: '0 0 1.5rem 0' }}>
+              📤 Share File with Department
+            </h2>
+
+            <form onSubmit={handleShareSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  Select Department
+                </label>
+                <select
+                  value={shareFormData.receiverDepartmentId}
+                  onChange={(e) => setShareFormData({
+                    ...shareFormData,
+                    receiverDepartmentId: e.target.value
+                  })}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 1rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '0.5rem',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  <option value="">-- Select Department --</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  Purpose of Share
+                </label>
+                <textarea
+                  value={shareFormData.purpose}
+                  onChange={(e) => setShareFormData({
+                    ...shareFormData,
+                    purpose: e.target.value
+                  })}
+                  placeholder="e.g., Data Analysis, Audit, Compliance Check"
+                  rows="3"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 1rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '0.5rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShareModal(null)}
+                  style={{
+                    flex: 1,
+                    background: '#e5e7eb',
+                    color: '#333',
+                    border: 'none',
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    flex: 1,
+                    background: loading ? '#9ca3af' : '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    fontWeight: '600',
+                    cursor: loading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {loading ? '⏳ Sharing...' : '📤 Share File'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -395,7 +547,7 @@ function FileUpload() {
                   Uploaded
                 </th>
                 <th style={{ padding: '1rem', textAlign: 'left', color: '#10b981', fontWeight: '600' }}>
-                  Action
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -409,7 +561,22 @@ function FileUpload() {
                   <td style={{ padding: '1rem', color: '#cbd5e1' }}>
                     {new Date(file.created_at).toLocaleDateString()}
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => handleShareFile(file.id)}
+                      style={{
+                        background: '#059669',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: '600'
+                      }}
+                    >
+                      📤 Share
+                    </button>
                     <button
                       onClick={() => handleDeleteFile(file.id)}
                       style={{

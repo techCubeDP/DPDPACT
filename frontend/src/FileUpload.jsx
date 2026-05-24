@@ -6,6 +6,69 @@ function FileUpload() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [retentionDays, setRetentionDays] = useState('30');
+  const [piiScanResults, setPiiScanResults] = useState(null);
+
+  const detectPII = (content) => {
+    const piiPatterns = {
+      email: { regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, label: '📧 Email' },
+      phone: { regex: /(\+91[-.\s]?)?([0-9]{10}|\([0-9]{3}\)[-.\s]?[0-9]{3}[-.\s]?[0-9]{4})/g, label: '☎️ Phone' },
+      aadhar: { regex: /\b([0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4})\b/g, label: '🔐 Aadhar' },
+      pan: { regex: /[A-Z]{5}[0-9]{4}[A-Z]{1}/g, label: '💳 PAN' },
+      ssn: { regex: /\b([0-9]{3}-[0-9]{2}-[0-9]{4})\b/g, label: '🔢 SSN' },
+      creditCard: { regex: /\b([0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4})\b/g, label: '💳 Credit Card' },
+      password: { regex: /password\s*[:=]\s*[^\s]+/gi, label: '🔒 Password' },
+      ipAddress: { regex: /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g, label: '🌐 IP Address' }
+    };
+
+    const findings = {};
+    let totalMatches = 0;
+
+    for (const [key, { regex, label }] of Object.entries(piiPatterns)) {
+      const matches = content.match(regex);
+      if (matches) {
+        findings[key] = {
+          label,
+          count: matches.length,
+          samples: matches.slice(0, 3)
+        };
+        totalMatches += matches.length;
+      }
+    }
+
+    return {
+      hasPII: totalMatches > 0,
+      totalMatches,
+      findings
+    };
+  };
+
+  const handleScanPII = async () => {
+    if (!file) {
+      setMessage('❌ Please select a file');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target.result;
+        const results = detectPII(content);
+        setPiiScanResults(results);
+        
+        if (results.hasPII) {
+          setMessage(`⚠️ Found ${results.totalMatches} PII indicators in the file!`);
+        } else {
+          setMessage('✅ No PII detected in this file');
+        }
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      setMessage('❌ Error scanning file: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -33,6 +96,7 @@ function FileUpload() {
       if (response.ok) {
         setMessage('✅ File uploaded successfully!');
         setFile(null);
+        setPiiScanResults(null);
         fetchFiles();
         setTimeout(() => setMessage(''), 3000);
       } else {
@@ -91,13 +155,6 @@ function FileUpload() {
     }
   };
 
-  const getRetentionColor = (daysRemaining) => {
-    if (!daysRemaining) return '#94a3b8';
-    if (daysRemaining <= 3) return '#ef4444';
-    if (daysRemaining <= 7) return '#f59e0b';
-    return '#10b981';
-  };
-
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header */}
@@ -132,7 +189,7 @@ function FileUpload() {
         </div>
       )}
 
-      {/* HTTP Upload Form */}
+      {/* Upload Form */}
       <div style={{
         background: '#1a1f3a',
         border: '2px dashed #10b981',
@@ -147,7 +204,10 @@ function FileUpload() {
             </label>
             <input
               type="file"
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={(e) => {
+                setFile(e.target.files[0]);
+                setPiiScanResults(null);
+              }}
               style={{
                 background: '#0f172a',
                 border: '1px solid #10b981',
@@ -160,42 +220,76 @@ function FileUpload() {
             />
           </div>
 
-          <div>
-            <label style={{ color: '#e2e8f0', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
-              ⏰ Retention Period (Auto-Delete)
-            </label>
-            <select
-              value={retentionDays}
-              onChange={(e) => setRetentionDays(e.target.value)}
+          {file && (
+            <div style={{
+              background: '#0f172a',
+              border: '1px solid #06b6d4',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              color: '#cbd5e1'
+            }}>
+              📋 Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(2)} KB)
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              type="button"
+              onClick={handleScanPII}
+              disabled={!file || loading}
               style={{
-                background: '#0f172a',
-                border: '1px solid #10b981',
-                color: '#e2e8f0',
-                padding: '0.75rem',
+                flex: 1,
+                background: loading ? '#475569' : '#06b6d4',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
                 borderRadius: '0.5rem',
-                width: '100%',
-                cursor: 'pointer'
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: loading || !file ? 'not-allowed' : 'pointer',
+                boxShadow: '0 0 15px rgba(6, 182, 212, 0.4)'
               }}
             >
-              <option value="7">7 days</option>
-              <option value="30">30 days</option>
-              <option value="90">90 days</option>
-              <option value="365">1 year</option>
-            </select>
+              {loading ? '⏳ Scanning...' : '🔍 Scan for PII'}
+            </button>
+
+            <div style={{ flex: 1 }}>
+              <label style={{ color: '#e2e8f0', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
+                ⏰ Retention Period
+              </label>
+              <select
+                value={retentionDays}
+                onChange={(e) => setRetentionDays(e.target.value)}
+                style={{
+                  background: '#0f172a',
+                  border: '1px solid #10b981',
+                  color: '#e2e8f0',
+                  padding: '0.75rem',
+                  borderRadius: '0.5rem',
+                  width: '100%',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="7">7 days</option>
+                <option value="30">30 days</option>
+                <option value="90">90 days</option>
+                <option value="365">1 year</option>
+              </select>
+            </div>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !file}
             style={{
-              background: loading ? '#475569' : 'linear-gradient(90deg, #10b981, #059669)',
+              background: loading || !file ? '#475569' : 'linear-gradient(90deg, #10b981, #059669)',
               color: 'white',
               padding: '0.75rem 1.5rem',
               fontSize: '1rem',
               fontWeight: '600',
               border: 'none',
               borderRadius: '0.5rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: loading || !file ? 'not-allowed' : 'pointer',
               boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)',
               transition: 'all 0.3s'
             }}
@@ -205,6 +299,77 @@ function FileUpload() {
         </form>
       </div>
 
+      {/* PII Scan Results */}
+      {piiScanResults && (
+        <div style={{
+          background: piiScanResults.hasPII ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+          border: piiScanResults.hasPII ? '2px solid #ef4444' : '2px solid #10b981',
+          borderRadius: '0.75rem',
+          padding: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          <h3 style={{
+            color: piiScanResults.hasPII ? '#fca5a5' : '#86efac',
+            marginTop: 0,
+            fontSize: '1.1rem'
+          }}>
+            {piiScanResults.hasPII ? '⚠️ PII DETECTED' : '✅ No PII Found'}
+          </h3>
+
+          {piiScanResults.hasPII && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '1rem',
+              marginTop: '1rem'
+            }}>
+              {Object.entries(piiScanResults.findings).map(([key, data]) => (
+                <div key={key} style={{
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  border: '1px solid #ef4444',
+                  borderRadius: '0.5rem',
+                  padding: '1rem'
+                }}>
+                  <div style={{ color: '#fca5a5', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    {data.label}
+                  </div>
+                  <div style={{ color: '#cbd5e1', fontSize: '0.875rem' }}>
+                    Found: <strong>{data.count}</strong> match(es)
+                  </div>
+                  {data.samples.length > 0 && (
+                    <div style={{
+                      color: '#94a3b8',
+                      fontSize: '0.75rem',
+                      marginTop: '0.5rem',
+                      fontFamily: 'monospace',
+                      maxHeight: '60px',
+                      overflow: 'auto'
+                    }}>
+                      {data.samples.map((sample, idx) => (
+                        <div key={idx} style={{ wordBreak: 'break-all' }}>
+                          {sample.substring(0, 30)}...
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p style={{
+            color: '#cbd5e1',
+            fontSize: '0.875rem',
+            margin: '1rem 0 0 0',
+            lineHeight: '1.6'
+          }}>
+            {piiScanResults.hasPII
+              ? '⚠️ This file contains personal data. Ensure proper data protection measures are in place before sharing.'
+              : '✅ Safe to share. No sensitive personal information detected.'}
+          </p>
+        </div>
+      )}
+
       {/* Files Table */}
       <div style={{
         background: '#1a1f3a',
@@ -212,7 +377,7 @@ function FileUpload() {
         padding: '1.5rem',
         border: '1px solid #10b981'
       }}>
-        <h2 style={{ color: '#10b981', marginBottom: '1rem' }}>📂 My Files</h2>
+        <h2 style={{ color: '#10b981', marginBottom: '1rem' }}>📂 My Files ({myFiles.length})</h2>
         
         {myFiles.length === 0 ? (
           <p style={{ color: '#94a3b8', textAlign: 'center' }}>No files uploaded yet</p>

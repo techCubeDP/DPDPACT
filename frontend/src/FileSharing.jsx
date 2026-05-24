@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 function FileSharing() {
   const [myFiles, setMyFiles] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [completedShares, setCompletedShares] = useState([]);
+  //const [completedShares, setCompletedShares] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(null);

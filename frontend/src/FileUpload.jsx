@@ -9,6 +9,8 @@ function FileUpload() {
   const [piiScanResults, setPiiScanResults] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [shareModal, setShareModal] = useState(null);
+  const [sftpCredentials, setSftpCredentials] = useState(null);
+  const [showSftp, setShowSftp] = useState(false);
   const [shareFormData, setShareFormData] = useState({
     receiverDepartmentId: '',
     purpose: ''
@@ -133,12 +135,32 @@ function FileUpload() {
     }
   };
 
+  const fetchSftpCredentials = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_URL}/api/sftp/credentials`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setSftpCredentials(data.data || data);
+    } catch (error) {
+      console.error('Error fetching SFTP credentials:', error);
+      setSftpCredentials({
+        host: 'sftp.dpdp-compliance.gov.in',
+        port: 22,
+        username: 'dpdp_user',
+        instructions: 'Use your login credentials to connect via SFTP. All files are automatically scanned for PII and subject to retention policies.'
+      });
+    }
+  };
+
   const fetchDepartments = async () => {
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${API_URL}/api/departments`);
       const data = await response.json();
-      console.log('Departments loaded:', data);
       setDepartments(data.departments || data.data || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
@@ -147,7 +169,6 @@ function FileUpload() {
   };
 
   const handleShareFile = (fileId) => {
-    console.log('Opening share modal for file:', fileId);
     setShareModal(fileId);
     setShareFormData({ receiverDepartmentId: '', purpose: '' });
     fetchDepartments();
@@ -155,7 +176,6 @@ function FileUpload() {
 
   const handleShareSubmit = async (e) => {
     e.preventDefault();
-    console.log('Share form submitted:', shareFormData);
     
     if (!shareFormData.receiverDepartmentId || !shareFormData.purpose) {
       setMessage('❌ Please fill all fields');
@@ -166,8 +186,6 @@ function FileUpload() {
     try {
       const token = localStorage.getItem('token');
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
-      console.log('Sharing file:', shareModal, 'with dept:', shareFormData.receiverDepartmentId);
 
       const response = await fetch(`${API_URL}/api/file-sharing/${shareModal}/share`, {
         method: 'POST',
@@ -182,7 +200,6 @@ function FileUpload() {
       });
 
       const data = await response.json();
-      console.log('Share response:', data);
 
       if (response.ok) {
         setMessage('✅ File shared successfully! Waiting for approval...');
@@ -193,7 +210,6 @@ function FileUpload() {
         setMessage('❌ Failed to share: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Share error:', error);
       setMessage('❌ Error: ' + error.message);
     } finally {
       setLoading(false);
@@ -202,6 +218,7 @@ function FileUpload() {
 
   React.useEffect(() => {
     fetchFiles();
+    fetchSftpCredentials();
   }, []);
 
   const handleDeleteFile = async (fileId) => {
@@ -244,7 +261,7 @@ function FileUpload() {
           📁 Secure File Upload & Sharing
         </h1>
         <p style={{ margin: 0, opacity: 0.95 }}>
-          Upload with automatic PII detection & secure sharing with other departments
+          Upload via HTTP or SFTP with automatic PII detection & secure sharing
         </p>
       </div>
 
@@ -262,77 +279,60 @@ function FileUpload() {
         </div>
       )}
 
-      {/* Upload Form */}
-      <div style={{
-        background: '#1a1f3a',
-        border: '2px dashed #10b981',
-        borderRadius: '0.75rem',
-        padding: '2rem',
-        marginBottom: '2rem'
-      }}>
-        <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <label style={{ color: '#e2e8f0', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
-              📄 Select File
-            </label>
-            <input
-              type="file"
-              onChange={(e) => {
-                setFile(e.target.files[0]);
-                setPiiScanResults(null);
-              }}
-              style={{
-                background: '#0f172a',
-                border: '1px solid #10b981',
-                color: '#e2e8f0',
-                padding: '0.75rem',
-                borderRadius: '0.5rem',
-                width: '100%',
-                cursor: 'pointer'
-              }}
-            />
-          </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <button
+          onClick={() => setShowSftp(false)}
+          style={{
+            background: !showSftp ? '#10b981' : '#334155',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.3s'
+          }}
+        >
+          📤 HTTP Upload
+        </button>
+        <button
+          onClick={() => { setShowSftp(true); fetchSftpCredentials(); }}
+          style={{
+            background: showSftp ? '#10b981' : '#334155',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.3s'
+          }}
+        >
+          🔐 SFTP Upload
+        </button>
+      </div>
 
-          {file && (
-            <div style={{
-              background: '#0f172a',
-              border: '1px solid #06b6d4',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              color: '#cbd5e1'
-            }}>
-              📋 Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(2)} KB)
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              type="button"
-              onClick={handleScanPII}
-              disabled={!file || loading}
-              style={{
-                flex: 1,
-                background: loading ? '#475569' : '#06b6d4',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '0.5rem',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: loading || !file ? 'not-allowed' : 'pointer',
-                boxShadow: '0 0 15px rgba(6, 182, 212, 0.4)'
-              }}
-            >
-              {loading ? '⏳ Scanning...' : '🔍 Scan for PII'}
-            </button>
-
-            <div style={{ flex: 1 }}>
+      {/* HTTP Upload Form */}
+      {!showSftp && (
+        <div style={{
+          background: '#1a1f3a',
+          border: '2px dashed #10b981',
+          borderRadius: '0.75rem',
+          padding: '2rem',
+          marginBottom: '2rem'
+        }}>
+          <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
               <label style={{ color: '#e2e8f0', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
-                ⏰ Retention Period
+                📄 Select File
               </label>
-              <select
-                value={retentionDays}
-                onChange={(e) => setRetentionDays(e.target.value)}
+              <input
+                type="file"
+                onChange={(e) => {
+                  setFile(e.target.files[0]);
+                  setPiiScanResults(null);
+                }}
                 style={{
                   background: '#0f172a',
                   border: '1px solid #10b981',
@@ -342,35 +342,118 @@ function FileUpload() {
                   width: '100%',
                   cursor: 'pointer'
                 }}
-              >
-                <option value="7">7 days</option>
-                <option value="30">30 days</option>
-                <option value="90">90 days</option>
-                <option value="365">1 year</option>
-              </select>
+              />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading || !file}
-            style={{
-              background: loading || !file ? '#475569' : 'linear-gradient(90deg, #10b981, #059669)',
-              color: 'white',
-              padding: '0.75rem 1.5rem',
-              fontSize: '1rem',
-              fontWeight: '600',
-              border: 'none',
-              borderRadius: '0.5rem',
-              cursor: loading || !file ? 'not-allowed' : 'pointer',
-              boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)',
-              transition: 'all 0.3s'
-            }}
-          >
-            {loading ? '⏳ Uploading...' : '+ Upload File'}
-          </button>
-        </form>
-      </div>
+            {file && (
+              <div style={{
+                background: '#0f172a',
+                border: '1px solid #06b6d4',
+                padding: '1rem',
+                borderRadius: '0.5rem',
+                color: '#cbd5e1'
+              }}>
+                📋 Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(2)} KB)
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type="button"
+                onClick={handleScanPII}
+                disabled={!file || loading}
+                style={{
+                  flex: 1,
+                  background: loading ? '#475569' : '#06b6d4',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: loading || !file ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 0 15px rgba(6, 182, 212, 0.4)'
+                }}
+              >
+                {loading ? '⏳ Scanning...' : '🔍 Scan for PII'}
+              </button>
+
+              <div style={{ flex: 1 }}>
+                <label style={{ color: '#e2e8f0', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
+                  ⏰ Retention Period
+                </label>
+                <select
+                  value={retentionDays}
+                  onChange={(e) => setRetentionDays(e.target.value)}
+                  style={{
+                    background: '#0f172a',
+                    border: '1px solid #10b981',
+                    color: '#e2e8f0',
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    width: '100%',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="7">7 days</option>
+                  <option value="30">30 days</option>
+                  <option value="90">90 days</option>
+                  <option value="365">1 year</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !file}
+              style={{
+                background: loading || !file ? '#475569' : 'linear-gradient(90deg, #10b981, #059669)',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                fontWeight: '600',
+                border: 'none',
+                borderRadius: '0.5rem',
+                cursor: loading || !file ? 'not-allowed' : 'pointer',
+                boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)',
+                transition: 'all 0.3s'
+              }}
+            >
+              {loading ? '⏳ Uploading...' : '+ Upload File'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* SFTP Info */}
+      {showSftp && sftpCredentials && (
+        <div style={{
+          background: '#1a1f3a',
+          border: '2px solid #3b82f6',
+          borderRadius: '0.75rem',
+          padding: '2rem',
+          marginBottom: '2rem'
+        }}>
+          <h2 style={{ color: '#3b82f6', marginBottom: '1rem' }}>🔐 SFTP Upload Instructions</h2>
+          <div style={{ background: '#0f172a', padding: '1.5rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+            <p style={{ color: '#e2e8f0', margin: '0.5rem 0', fontFamily: 'monospace' }}>
+              <strong>Host:</strong> {sftpCredentials.host}
+            </p>
+            <p style={{ color: '#e2e8f0', margin: '0.5rem 0', fontFamily: 'monospace' }}>
+              <strong>Port:</strong> {sftpCredentials.port}
+            </p>
+            <p style={{ color: '#e2e8f0', margin: '0.5rem 0', fontFamily: 'monospace' }}>
+              <strong>Username:</strong> {sftpCredentials.username}
+            </p>
+            <p style={{ color: '#e2e8f0', margin: '0.5rem 0', fontFamily: 'monospace' }}>
+              <strong>Password:</strong> Your login password
+            </p>
+          </div>
+          <p style={{ color: '#cbd5e1', lineHeight: '1.8' }}>
+            {sftpCredentials.instructions || 'Connect using any SFTP client (FileZilla, WinSCP, Terminal) with your credentials above. All uploaded files are automatically scanned for PII and subject to retention policies.'}
+          </p>
+        </div>
+      )}
 
       {/* PII Scan Results */}
       {piiScanResults && (
@@ -450,13 +533,10 @@ function FileUpload() {
                 </label>
                 <select
                   value={shareFormData.receiverDepartmentId}
-                  onChange={(e) => {
-                    console.log('Department selected:', e.target.value);
-                    setShareFormData({
-                      ...shareFormData,
-                      receiverDepartmentId: e.target.value
-                    });
-                  }}
+                  onChange={(e) => setShareFormData({
+                    ...shareFormData,
+                    receiverDepartmentId: e.target.value
+                  })}
                   required
                   style={{
                     width: '100%',
@@ -483,13 +563,10 @@ function FileUpload() {
                 </label>
                 <textarea
                   value={shareFormData.purpose}
-                  onChange={(e) => {
-                    console.log('Purpose entered:', e.target.value);
-                    setShareFormData({
-                      ...shareFormData,
-                      purpose: e.target.value
-                    });
-                  }}
+                  onChange={(e) => setShareFormData({
+                    ...shareFormData,
+                    purpose: e.target.value
+                  })}
                   placeholder="e.g., Data Analysis, Audit, Compliance Check"
                   rows="3"
                   required
@@ -510,7 +587,6 @@ function FileUpload() {
                 <button
                   type="button"
                   onClick={() => {
-                    console.log('Closing modal');
                     setShareModal(null);
                     setShareFormData({ receiverDepartmentId: '', purpose: '' });
                   }}

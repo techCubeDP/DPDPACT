@@ -64,16 +64,17 @@ function App() {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-  { id: 'discovery', label: 'Data Discovery', icon: '📊' },
-  { id: 'advancedDiscovery', label: 'Advanced Discovery', icon: '🗄️' },
-  { id: 'compliance', label: 'Compliance', icon: '✓' },
-  { id: 'breach', label: 'Breach Alert', icon: '🚨' },
-  { id: 'upload', label: 'File Upload', icon: '📁' },
-  { id: 'sharing', label: 'File Sharing', icon: '🔄' },
-  { id: 'audit', label: 'Audit Logs', icon: '📋' },
-];
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+    { id: 'discovery', label: 'Data Discovery', icon: '📊' },
+    { id: 'advancedDiscovery', label: 'Advanced Discovery', icon: '🗄️' },
+    { id: 'compliance', label: 'Compliance', icon: '✅' },
+    { id: 'breach', label: 'Breach Alert', icon: '🚨' },
+    { id: 'upload', label: 'File Upload', icon: '📁' },
+    { id: 'sharing', label: 'File Sharing', icon: '📥' },
+    { id: 'exchange', label: 'File Exchange', icon: '🔄' },
+    { id: 'audit', label: 'Audit Logs', icon: '📋' },
+  ];
 
   return (
     <div className="app">
@@ -118,13 +119,13 @@ const navItems = [
       {/* MAIN CONTENT */}
       <div className="main-content">
         {/* TOP BAR */}
-        <div>
+        <div className="top-bar">
           <h1>{navItems.find(item => item.id === activePage)?.label}</h1>
         </div>
 
         {/* PAGE CONTENT */}
-        <div>
-          <div>
+        <div className="page-content">
+          <div className="content-inner">
             {activePage === 'dashboard' && <Dashboard user={user} />}
             {activePage === 'discovery' && <DataDiscovery />}
             {activePage === 'advancedDiscovery' && <AdvancedDiscovery />} 
@@ -132,6 +133,7 @@ const navItems = [
             {activePage === 'breach' && <BreachAlert />}
             {activePage === 'upload' && <FileUpload />}
             {activePage === 'sharing' && <FileSharing />}
+            {activePage === 'exchange' && <FileExchange />}
             {activePage === 'audit' && <AuditLogs />}
           </div>
         </div>

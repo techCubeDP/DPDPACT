@@ -9,6 +9,7 @@ import FileUpload from './FileUpload';
 import FileSharing from './FileSharing';
 import AuditLogs from './AuditLogs';
 import AdvancedDiscovery from './AdvancedDiscovery';
+import FileExchange from './FileExchange';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
